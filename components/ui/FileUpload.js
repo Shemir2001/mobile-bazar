@@ -1,0 +1,174 @@
+// 'use client';
+
+// import { useState } from 'react';
+// import { Upload, Button, message } from 'antd';
+// import { UploadOutlined } from '@ant-design/icons';
+
+// const FileUpload = ({ onUploadComplete, maxCount = 1, accept = "image/*" }) => {
+//   const [loading, setLoading] = useState(false);
+//   const [fileList, setFileList] = useState([]);
+
+//   const handleUpload = async (options) => {
+//     const { file, onSuccess, onError } = options;
+//     setLoading(true);
+
+//     try {
+//       const formData = new FormData();
+//       formData.append('file', file);
+
+//       const response = await fetch('/api/upload', {
+//         method: 'POST',
+//         body: formData,
+//       });
+
+//       const result = await response.json();
+
+//       if (result.success) {
+//         message.success(`${file.name} uploaded successfully`);
+//         onSuccess(result, file);
+        
+//         // Call the callback with the file path
+//         if (onUploadComplete) {
+//           onUploadComplete(result.filePath);
+//         }
+//       } else {
+//         message.error(`${file.name} upload failed: ${result.message}`);
+//         onError(new Error(result.message));
+//       }
+//     } catch (error) {
+//       message.error(`${file.name} upload failed: ${error.message}`);
+//       onError(error);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   const uploadProps = {
+//     name: 'file',
+//     multiple: false,
+//     maxCount,
+//     accept,
+//     fileList,
+//     customRequest: handleUpload,
+//     onChange(info) {
+//       // Update file list
+//       let newFileList = [...info.fileList];
+      
+//       // Just keep the latest file if maxCount is 1
+//       newFileList = newFileList.slice(-maxCount);
+      
+//       // Update status
+//       newFileList = newFileList.map(file => {
+//         if (file.response) {
+//           file.url = file.response.filePath;
+//         }
+//         return file;
+//       });
+      
+//       setFileList(newFileList);
+//     },
+//     onRemove() {
+//       // Reset the file path when removing
+//       if (onUploadComplete) {
+//         onUploadComplete('');
+//       }
+//     }
+//   };
+
+//   return (
+//     <Upload {...uploadProps} listType="picture">
+//       <Button icon={<UploadOutlined />} loading={loading}>
+//         {loading ? 'Uploading' : 'Upload'}
+//       </Button>
+//     </Upload>
+//   );
+// };
+
+// export default FileUpload;
+'use client';
+
+import { useState } from 'react';
+import { Upload, Button, message } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+
+const FileUpload = ({ onUploadComplete, maxCount = 1, accept = 'image/*' }) => {
+  const [loading, setLoading] = useState(false);
+  const [fileList, setFileList] = useState([]);
+
+  const handleUpload = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload to your API, which sends to Cloudinary
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (result.success && result.url) {
+        message.success(`${file.name} uploaded successfully`);
+        onSuccess(result, file);
+
+        // Send the Cloudinary URL to the parent component
+        if (onUploadComplete) {
+          onUploadComplete(result.url);
+        }
+      } else {
+        message.error(`${file.name} upload failed: ${result.message || 'Unknown error'}`);
+        onError(new Error(result.message || 'Upload failed'));
+      }
+    } catch (error) {
+      message.error(`${file.name} upload failed: ${error.message}`);
+      onError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const uploadProps = {
+    name: 'file',
+    multiple: false,
+    maxCount,
+    accept,
+    fileList,
+    customRequest: handleUpload,
+    onChange(info) {
+      let newFileList = [...info.fileList];
+
+      // Limit number of files
+      newFileList = newFileList.slice(-maxCount);
+
+      // Map file URLs from response
+      newFileList = newFileList.map((file) => {
+        if (file.response?.url) {
+          file.url = file.response.url;
+        }
+        return file;
+      });
+
+      setFileList(newFileList);
+    },
+    onRemove(file) {
+      // Reset uploaded URL in parent
+      if (onUploadComplete) {
+        onUploadComplete('');
+      }
+    },
+  };
+
+  return (
+    <Upload {...uploadProps} listType="picture">
+      <Button icon={<UploadOutlined />} loading={loading}>
+        {loading ? 'Uploading' : 'Upload'}
+      </Button>
+    </Upload>
+  );
+};
+
+export default FileUpload;
