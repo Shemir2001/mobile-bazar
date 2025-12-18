@@ -242,11 +242,191 @@
 //     </div>
 //   );
 // }
+// 'use client';
+
+// import { useState, useEffect } from 'react';
+// import { motion } from 'framer-motion';
+// import { FiShoppingBag, FiUsers, FiShoppingCart, FiDollarSign, FiTrendingUp } from 'react-icons/fi';
+
+// export default function AdminDashboard() {
+//   const [stats, setStats] = useState({
+//     totalSales: 0,
+//     totalOrders: 0,
+//     totalCustomers: 0,
+//     totalProducts: 0,
+//     recentOrders: [],
+//     salesData: [],
+//   });
+//   const [isLoading, setIsLoading] = useState(true);
+
+//   useEffect(() => {
+//     const fetchStats = async () => {
+//       try {
+//         const res = await fetch('/api/admin/stats');
+//         if (!res.ok) throw new Error('Failed to fetch stats');
+//         const data = await res.json();
+//         setStats(data);
+//       } catch (err) {
+//         console.error('Error fetching admin stats:', err);
+//       } finally {
+//         setIsLoading(false);
+//       }
+//     };
+
+//     fetchStats();
+//   }, []);
+
+//   const containerVariants = {
+//     hidden: { opacity: 0 },
+//     visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+//   };
+
+//   const itemVariants = {
+//     hidden: { y: 20, opacity: 0 },
+//     visible: { y: 0, opacity: 1, transition: { duration: 0.5 } }
+//   };
+
+//   const getStatusColor = (status) => {
+//     switch (status) {
+//       case 'Delivered': return 'bg-green-100 text-green-800';
+//       case 'Processing': return 'bg-blue-100 text-blue-800';
+//       case 'Shipped': return 'bg-yellow-100 text-yellow-800';
+//       default: return 'bg-gray-100 text-gray-800';
+//     }
+//   };
+
+//   return (
+//     <div className="max-w-7xl mx-auto px-4 py-8">
+//       <h1 className="text-2xl font-bold text-gray-900 mb-6">Dashboard</h1>
+
+//       {isLoading ? (
+//         <div className="flex justify-center items-center h-64">
+//           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+//         </div>
+//       ) : (
+//         <>
+//           {/* Stats Cards */}
+//           <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+//             variants={containerVariants} initial="hidden" animate="visible">
+            
+//             <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+//               <div className="rounded-full bg-blue-100 p-3 mr-4">
+//                 <FiDollarSign className="h-6 w-6 text-blue-600" />
+//               </div>
+//               <div>
+//                 <p className="text-sm font-medium text-gray-600">Total Sales</p>
+//                 <p className="text-2xl font-bold text-gray-900">${(stats.totalSales ?? 0).toLocaleString()}
+// </p>
+//               </div>
+//             </motion.div>
+
+//             <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+//               <div className="rounded-full bg-green-100 p-3 mr-4">
+//                 <FiShoppingCart className="h-6 w-6 text-green-600" />
+//               </div>
+//               <div>
+//                 <p className="text-sm font-medium text-gray-600">Total Orders</p>
+//                 <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+//               </div>
+//             </motion.div>
+
+//             <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+//               <div className="rounded-full bg-purple-100 p-3 mr-4">
+//                 <FiUsers className="h-6 w-6 text-purple-600" />
+//               </div>
+//               <div>
+//                 <p className="text-sm font-medium text-gray-600">Total Customers</p>
+//                 <p className="text-2xl font-bold text-gray-900">{stats.totalCustomers}</p>
+//               </div>
+//             </motion.div>
+
+//             <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+//               <div className="rounded-full bg-orange-100 p-3 mr-4">
+//                 <FiShoppingBag className="h-6 w-6 text-orange-600" />
+//               </div>
+//               <div>
+//                 <p className="text-sm font-medium text-gray-600">Total Products</p>
+//                 <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
+//               </div>
+//             </motion.div>
+//           </motion.div>
+
+//           {/* Sales Chart */}
+//           <motion.div className="bg-white rounded-lg shadow p-6 mb-8" variants={itemVariants}>
+//             <div className="flex items-center justify-between mb-4">
+//               <h2 className="text-lg font-medium text-gray-900">Sales Overview</h2>
+//               <div className="flex items-center">
+//                 <FiTrendingUp className="h-5 w-5 text-green-500 mr-1" />
+//                 <span className="text-sm font-medium text-green-500">+{stats.salesGrowthPercent || 0}% from last month</span>
+//               </div>
+//             </div>
+            
+//             <div className=" w-full flex h-48 items-end space-x-2">
+//               {stats.salesData.map((item, index) => (
+//                 <div key={index} className="flex flex-col items-center flex-1">
+//                   <div className="w-full bg-blue-500 rounded-t"
+//                     style={{
+//                       height: `${(item.sales / Math.max(...stats.salesData.map(d => d.sales))) * 100}%`,
+//                       transition: 'height 1s ease-in-out'
+//                     }}
+//                   ></div>
+//                   <div className="text-xs mt-2 text-gray-600">{item.month}</div>
+//                 </div>
+//               ))}
+//             </div>
+//           </motion.div>
+
+//           {/* Recent Orders */}
+//           <motion.div className="bg-white rounded-lg shadow overflow-hidden" variants={itemVariants}>
+//             <div className="px-6 py-4 border-b">
+//               <h2 className="text-lg font-medium text-gray-900">Recent Orders</h2>
+//             </div>
+
+//             <div className="overflow-x-auto">
+//               <table className="min-w-full divide-y divide-gray-200">
+//                 <thead className="bg-gray-50">
+//                   <tr>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+//                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+//                   </tr>
+//                 </thead>
+//                 <tbody className="bg-white divide-y divide-gray-200">
+//                   {stats.recentOrders.map(order => (
+//                     <tr key={order._id} className="hover:bg-gray-50">
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{order._id}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.customerName}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.total.toFixed(2)}</td>
+//                       <td className="px-6 py-4 whitespace-nowrap">
+//                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
+//                           {order.status}
+//                         </span>
+//                       </td>
+//                     </tr>
+//                   ))}
+//                 </tbody>
+//               </table>
+//             </div>
+//           </motion.div>
+//         </>
+//       )}
+//     </div>
+//   );
+// }
 'use client';
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiShoppingBag, FiUsers, FiShoppingCart, FiDollarSign, FiTrendingUp } from 'react-icons/fi';
+import {
+  FiShoppingBag,
+  FiUsers,
+  FiShoppingCart,
+  FiDollarSign,
+  FiTrendingUp,
+} from 'react-icons/fi';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -256,7 +436,9 @@ export default function AdminDashboard() {
     totalProducts: 0,
     recentOrders: [],
     salesData: [],
+    salesGrowthPercent: 0,
   });
+
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -264,8 +446,19 @@ export default function AdminDashboard() {
       try {
         const res = await fetch('/api/admin/stats');
         if (!res.ok) throw new Error('Failed to fetch stats');
+
         const data = await res.json();
-        setStats(data);
+
+        // ✅ HARD NORMALIZATION (prevents ALL frontend crashes)
+        setStats({
+          totalSales: Number(data.totalSales ?? 0),
+          totalOrders: Number(data.totalOrders ?? 0),
+          totalCustomers: Number(data.totalCustomers ?? 0),
+          totalProducts: Number(data.totalProducts ?? 0),
+          salesGrowthPercent: Number(data.salesGrowthPercent ?? 0),
+          salesData: Array.isArray(data.salesData) ? data.salesData : [],
+          recentOrders: Array.isArray(data.recentOrders) ? data.recentOrders : [],
+        });
       } catch (err) {
         console.error('Error fetching admin stats:', err);
       } finally {
@@ -278,22 +471,33 @@ export default function AdminDashboard() {
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
 
   const itemVariants = {
     hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.5 } }
+    visible: { y: 0, opacity: 1, transition: { duration: 0.5 } },
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Delivered': return 'bg-green-100 text-green-800';
-      case 'Processing': return 'bg-blue-100 text-blue-800';
-      case 'Shipped': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getStatusColor = (status = '') => {
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        return 'bg-green-100 text-green-800';
+      case 'processing':
+        return 'bg-blue-100 text-blue-800';
+      case 'shipped':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
+
+  const maxSales = Math.max(
+    1,
+    ...stats.salesData.map((d) => Number(d.sales ?? 0))
+  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -301,21 +505,26 @@ export default function AdminDashboard() {
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
         </div>
       ) : (
         <>
-          {/* Stats Cards */}
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-            variants={containerVariants} initial="hidden" animate="visible">
-            
+          {/* ================= STATS CARDS ================= */}
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
             <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
               <div className="rounded-full bg-blue-100 p-3 mr-4">
                 <FiDollarSign className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Sales</p>
-                <p className="text-2xl font-bold text-gray-900">${stats.totalSales.toLocaleString()}</p>
+                <p className="text-sm text-gray-600">Total Sales</p>
+                <p className="text-2xl font-bold">
+                  ${stats.totalSales.toLocaleString()}
+                </p>
               </div>
             </motion.div>
 
@@ -324,8 +533,8 @@ export default function AdminDashboard() {
                 <FiShoppingCart className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Orders</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
+                <p className="text-sm text-gray-600">Total Orders</p>
+                <p className="text-2xl font-bold">{stats.totalOrders}</p>
               </div>
             </motion.div>
 
@@ -334,8 +543,8 @@ export default function AdminDashboard() {
                 <FiUsers className="h-6 w-6 text-purple-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalCustomers}</p>
+                <p className="text-sm text-gray-600">Total Customers</p>
+                <p className="text-2xl font-bold">{stats.totalCustomers}</p>
               </div>
             </motion.div>
 
@@ -344,70 +553,95 @@ export default function AdminDashboard() {
                 <FiShoppingBag className="h-6 w-6 text-orange-600" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Products</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
+                <p className="text-sm text-gray-600">Total Products</p>
+                <p className="text-2xl font-bold">{stats.totalProducts}</p>
               </div>
             </motion.div>
           </motion.div>
 
-          {/* Sales Chart */}
+          {/* ================= SALES CHART ================= */}
           <motion.div className="bg-white rounded-lg shadow p-6 mb-8" variants={itemVariants}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium text-gray-900">Sales Overview</h2>
+              <h2 className="text-lg font-medium">Sales Overview</h2>
               <div className="flex items-center">
                 <FiTrendingUp className="h-5 w-5 text-green-500 mr-1" />
-                <span className="text-sm font-medium text-green-500">+{stats.salesGrowthPercent || 0}% from last month</span>
+                <span className="text-sm text-green-500">
+                  +{stats.salesGrowthPercent}% from last month
+                </span>
               </div>
             </div>
-            
-            <div className=" w-full flex h-48 items-end space-x-2">
+
+            <div className="flex h-48 items-end space-x-2">
               {stats.salesData.map((item, index) => (
                 <div key={index} className="flex flex-col items-center flex-1">
-                  <div className="w-full bg-blue-500 rounded-t"
+                  <div
+                    className="w-full bg-blue-500 rounded-t"
                     style={{
-                      height: `${(item.sales / Math.max(...stats.salesData.map(d => d.sales))) * 100}%`,
-                      transition: 'height 1s ease-in-out'
+                      height: `${(Number(item.sales ?? 0) / maxSales) * 100}%`,
                     }}
-                  ></div>
-                  <div className="text-xs mt-2 text-gray-600">{item.month}</div>
+                  />
+                  <div className="text-xs mt-2 text-gray-600">
+                    {item.month || '-'}
+                  </div>
                 </div>
               ))}
             </div>
           </motion.div>
 
-          {/* Recent Orders */}
+          {/* ================= RECENT ORDERS ================= */}
           <motion.div className="bg-white rounded-lg shadow overflow-hidden" variants={itemVariants}>
             <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-medium text-gray-900">Recent Orders</h2>
+              <h2 className="text-lg font-medium">Recent Orders</h2>
             </div>
 
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Order ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Customer</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Total</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Status</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {stats.recentOrders.map(order => (
+                <tbody className="divide-y divide-gray-200">
+                  {stats.recentOrders.map((order) => (
                     <tr key={order._id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">{order._id}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{order.customerName}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${order.total.toFixed(2)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(order.status)}`}>
-                          {order.status}
+                      <td className="px-6 py-4 text-sm text-blue-600">{order._id}</td>
+                      <td className="px-6 py-4 text-sm">
+                        {order.shippingAddress?.name || order.email || '—'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleDateString()
+                          : '—'}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium">
+                        $
+                        {Number(
+                          order.totalPrice ?? order.total ?? 0
+                        ).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(
+                            order.status
+                          )}`}
+                        >
+                          {order.status || 'pending'}
                         </span>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              {stats.recentOrders.length === 0 && (
+                <div className="text-center py-6 text-gray-500">
+                  No recent orders
+                </div>
+              )}
             </div>
           </motion.div>
         </>
