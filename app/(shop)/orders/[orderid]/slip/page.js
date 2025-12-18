@@ -12,23 +12,23 @@
 //     </div>
 //   );
 // }
-'use client';
+// 'use client';
 
-export default function OrderSlipPage({ params }) {
-  const { orderId } = params;
+// export default function OrderSlipPage({ params }) {
+//   const { orderId } = params;
 
-  const src = `/api/orders/${orderId}/slip`;
+//   const src = `/api/orders/${orderId}/slip`;
 
-  return (
-    <div className="w-full h-screen">
-      <iframe
-        src={src}
-        className="w-full h-full border"
-        title="Order Slip"
-      />
-    </div>
-  );
-}
+//   return (
+//     <div className="w-full h-screen">
+//       <iframe
+//         src={src}
+//         className="w-full h-full border"
+//         title="Order Slip"
+//       />
+//     </div>
+//   );
+// }
 
 // 'use client';
 
@@ -210,3 +210,32 @@ export default function OrderSlipPage({ params }) {
 //     </div>
 //   );
 // }
+'use client';
+
+import { useEffect, useState } from 'react';
+import { PDFViewer } from '@react-pdf/renderer';
+import OrderSlipDocument from '@/components/OrderSlipDocument';
+
+export default function OrderSlipPage({ params }) {
+  const { orderId } = params;
+  const [order, setOrder] = useState(null);
+
+  useEffect(() => {
+    const fetchOrder = async () => {
+      const res = await fetch(`/api/orders/${orderId}/slip`);
+      const data = await res.json();
+      setOrder(data);
+    };
+    fetchOrder();
+  }, [orderId]);
+
+  if (!order) return <div>Loading...</div>;
+
+  return (
+    <div className="w-full h-screen">
+      <PDFViewer width="100%" height="100%">
+        <OrderSlipDocument order={order} />
+      </PDFViewer>
+    </div>
+  );
+}
