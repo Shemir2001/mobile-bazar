@@ -1,17 +1,35 @@
+// 'use client';
+
+// export default function OrderSlipPage({ params }) {
+//   const { orderId } = params;
+
+//   return (
+//     <div className="w-full h-screen">
+//       <iframe
+//         src={`/api/orders/${orderId}/slip`}
+//         className="w-full h-full border"
+//       />
+//     </div>
+//   );
+// }
 'use client';
 
 export default function OrderSlipPage({ params }) {
   const { orderId } = params;
 
+  const src = `/api/orders/${orderId}/slip`;
+
   return (
     <div className="w-full h-screen">
       <iframe
-        src={`/api/orders/${orderId}/slip`}
+        src={src}
         className="w-full h-full border"
+        title="Order Slip"
       />
     </div>
   );
 }
+
 // 'use client';
 
 // import { useEffect, useState } from 'react';
