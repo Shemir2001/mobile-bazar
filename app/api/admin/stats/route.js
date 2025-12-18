@@ -40,13 +40,14 @@ export async function GET() {
     totalCustomers,
     totalProducts,
     salesData,
-    recentOrders: recentOrders.map(o => ({
-      _id: o._id,
-      customerName: o.user.name,
-      total: o.total,
-      status: o.status,
-      createdAt: o.createdAt
-    })),
-    salesGrowthPercent: 12.5 // optional, you can calculate dynamically
+   recentOrders: recentOrders.map(o => ({
+  _id: o._id,
+  customerName: o.user?.name || o.shippingAddress?.name || '—',
+  email: o.email || '—',
+  total: o.totalPrice ?? 0,
+  status: o.status ?? 'pending',
+  createdAt: o.createdAt
+}))
+   
   });
 }

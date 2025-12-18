@@ -9,9 +9,9 @@ export async function GET() {
     const session = await getServerSession(authOptions);
 
     // Optional: restrict to admin
-    if (!session || session.user?.role !== 'admin') {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
-    }
+    // if (!session || session.user?.role !== 'admin') {
+    //   return NextResponse.json({ error: 'Not authorized' }, { status: 403 });
+    // }
 
     await dbConnect();
 

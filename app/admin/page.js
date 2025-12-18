@@ -441,31 +441,31 @@ export default function AdminDashboard() {
 
   const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch stats and recent orders
+  const fetchStats = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/admin/stats');
+      if (!res.ok) throw new Error('Failed to fetch stats');
+      const data = await res.json();
+
+      setStats({
+        totalSales: Number(data.totalSales ?? 0),
+        totalOrders: Number(data.totalOrders ?? 0),
+        totalCustomers: Number(data.totalCustomers ?? 0),
+        totalProducts: Number(data.totalProducts ?? 0),
+        salesGrowthPercent: Number(data.salesGrowthPercent ?? 0),
+        salesData: Array.isArray(data.salesData) ? data.salesData : [],
+        recentOrders: Array.isArray(data.recentOrders) ? data.recentOrders : [],
+      });
+    } catch (err) {
+      console.error('Error fetching admin stats:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch('/api/admin/stats');
-        if (!res.ok) throw new Error('Failed to fetch stats');
-
-        const data = await res.json();
-
-        // ✅ HARD NORMALIZATION (prevents ALL frontend crashes)
-        setStats({
-          totalSales: Number(data.totalSales ?? 0),
-          totalOrders: Number(data.totalOrders ?? 0),
-          totalCustomers: Number(data.totalCustomers ?? 0),
-          totalProducts: Number(data.totalProducts ?? 0),
-          salesGrowthPercent: Number(data.salesGrowthPercent ?? 0),
-          salesData: Array.isArray(data.salesData) ? data.salesData : [],
-          recentOrders: Array.isArray(data.recentOrders) ? data.recentOrders : [],
-        });
-      } catch (err) {
-        console.error('Error fetching admin stats:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchStats();
   }, []);
 
@@ -480,13 +480,13 @@ export default function AdminDashboard() {
   };
 
   const getStatusColor = (status = '') => {
-    switch (status.toLowerCase()) {
+    switch (status?.toLowerCase()) {
       case 'delivered':
         return 'bg-green-100 text-green-800';
       case 'processing':
         return 'bg-blue-100 text-blue-800';
-      case 'shipped':
-        return 'bg-yellow-100 text-yellow-800';
+      case 'completed':
+        return 'bg-purple-100 text-purple-800';
       case 'paid':
         return 'bg-green-100 text-green-800';
       default:
@@ -498,6 +498,48 @@ export default function AdminDashboard() {
     1,
     ...stats.salesData.map((d) => Number(d.sales ?? 0))
   );
+
+  // Handle status change
+  const handleStatusChange = async (orderId, newStatus) => {
+    if (!confirm(`Are you sure you want to set order ${orderId} to "${newStatus}"?`)) return;
+    try {
+      // Optimistic UI update
+      setStats((prev) => ({
+        ...prev,
+        recentOrders: prev.recentOrders.map((o) =>
+          o._id === orderId ? { ...o, updating: true } : o
+        ),
+      }));
+
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update status');
+
+      // Update order status locally
+      setStats((prev) => ({
+        ...prev,
+        recentOrders: prev.recentOrders.map((o) =>
+          o._id === orderId
+            ? { ...o, status: data.order.status, updating: false }
+            : o
+        ),
+      }));
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+      setStats((prev) => ({
+        ...prev,
+        recentOrders: prev.recentOrders.map((o) =>
+          o._id === orderId ? { ...o, updating: false } : o
+        ),
+      }));
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
@@ -516,19 +558,23 @@ export default function AdminDashboard() {
             initial="hidden"
             animate="visible"
           >
-            <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+            <motion.div
+              className="bg-white rounded-lg shadow p-6 flex items-center"
+              variants={itemVariants}
+            >
               <div className="rounded-full bg-blue-100 p-3 mr-4">
                 <FiDollarSign className="h-6 w-6 text-blue-600" />
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Sales</p>
-                <p className="text-2xl font-bold">
-                  ${stats.totalSales.toLocaleString()}
-                </p>
+                <p className="text-2xl font-bold">${stats.totalSales.toLocaleString()}</p>
               </div>
             </motion.div>
 
-            <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+            <motion.div
+              className="bg-white rounded-lg shadow p-6 flex items-center"
+              variants={itemVariants}
+            >
               <div className="rounded-full bg-green-100 p-3 mr-4">
                 <FiShoppingCart className="h-6 w-6 text-green-600" />
               </div>
@@ -538,7 +584,10 @@ export default function AdminDashboard() {
               </div>
             </motion.div>
 
-            <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+            <motion.div
+              className="bg-white rounded-lg shadow p-6 flex items-center"
+              variants={itemVariants}
+            >
               <div className="rounded-full bg-purple-100 p-3 mr-4">
                 <FiUsers className="h-6 w-6 text-purple-600" />
               </div>
@@ -548,7 +597,10 @@ export default function AdminDashboard() {
               </div>
             </motion.div>
 
-            <motion.div className="bg-white rounded-lg shadow p-6 flex items-center" variants={itemVariants}>
+            <motion.div
+              className="bg-white rounded-lg shadow p-6 flex items-center"
+              variants={itemVariants}
+            >
               <div className="rounded-full bg-orange-100 p-3 mr-4">
                 <FiShoppingBag className="h-6 w-6 text-orange-600" />
               </div>
@@ -560,7 +612,10 @@ export default function AdminDashboard() {
           </motion.div>
 
           {/* ================= SALES CHART ================= */}
-          <motion.div className="bg-white rounded-lg shadow p-6 mb-8" variants={itemVariants}>
+          <motion.div
+            className="bg-white rounded-lg shadow p-6 mb-8"
+            variants={itemVariants}
+          >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-medium">Sales Overview</h2>
               <div className="flex items-center">
@@ -580,16 +635,17 @@ export default function AdminDashboard() {
                       height: `${(Number(item.sales ?? 0) / maxSales) * 100}%`,
                     }}
                   />
-                  <div className="text-xs mt-2 text-gray-600">
-                    {item.month || '-'}
-                  </div>
+                  <div className="text-xs mt-2 text-gray-600">{item.month || '-'}</div>
                 </div>
               ))}
             </div>
           </motion.div>
 
-          {/* ================= RECENT ORDERS ================= */}
-          <motion.div className="bg-white rounded-lg shadow overflow-hidden" variants={itemVariants}>
+          {/* ================= RECENT ORDERS (UPDATED) ================= */}
+          <motion.div
+            className="bg-white rounded-lg shadow overflow-hidden"
+            variants={itemVariants}
+          >
             <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-medium">Recent Orders</h2>
             </div>
@@ -600,37 +656,40 @@ export default function AdminDashboard() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Order ID</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Customer</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Date</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Total</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500">Action</th>
                   </tr>
                 </thead>
+
                 <tbody className="divide-y divide-gray-200">
                   {stats.recentOrders.map((order) => (
                     <tr key={order._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 text-sm text-blue-600">{order._id}</td>
-                      <td className="px-6 py-4 text-sm">
-                        {order.shippingAddress?.name || order.email || '—'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-500">
-                        {order.createdAt
-                          ? new Date(order.createdAt).toLocaleDateString()
-                          : '—'}
-                      </td>
+                      <td className="px-6 py-4 text-sm">{order.shippingAddress?.name || '—'}</td>
+                      <td className="px-6 py-4 text-sm">{order.email || '—'}</td>
                       <td className="px-6 py-4 text-sm font-medium">
-                        $
-                        {Number(
-                          order.totalPrice ?? order.total ?? 0
-                        ).toFixed(2)}
+                        ${Number(order.totalPrice ?? order.total ?? 0).toFixed(2)}
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(
-                            order.status
-                          )}`}
+                          className={`px-2 inline-flex text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}
                         >
                           {order.status || 'pending'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 space-x-2">
+                        {['processing', 'delivered', 'completed'].map((status) => (
+                          <button
+                            key={status}
+                            disabled={order.updating}
+                            onClick={() => handleStatusChange(order._id, status)}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs"
+                          >
+                            {status}
+                          </button>
+                        ))}
                       </td>
                     </tr>
                   ))}
@@ -638,9 +697,7 @@ export default function AdminDashboard() {
               </table>
 
               {stats.recentOrders.length === 0 && (
-                <div className="text-center py-6 text-gray-500">
-                  No recent orders
-                </div>
+                <div className="text-center py-6 text-gray-500">No recent orders</div>
               )}
             </div>
           </motion.div>
