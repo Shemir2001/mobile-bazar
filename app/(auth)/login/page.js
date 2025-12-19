@@ -17,93 +17,90 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    if (!verificationStep) {
-      try {
-        // Send verification code first
-        const response = await fetch('/api/auth/login-verification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          setError(data.message);
-          // message.error(data.message);
-        } else {
-          setVerificationStep(true);
-          // message.success('Verification code sent to your email');
-        }
-      } catch (error) {
-        setError('An error occurred. Please try again.');
-        // message.error('An error occurred. Please try again.');
-      } finally {
-        setLoading(false);
+  if (!verificationStep) {
+    try {
+      // Send verification code first
+      const response = await fetch('/api/auth/login-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message);
+      } else {
+        setVerificationStep(true);
       }
-    } else {
-      // Verify code and complete login
-      try {
-        // First verify the code
-        const response = await fetch('/api/auth/verify-login-code', {
+    } catch (error) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  } else {
+    // Verify code and complete login
+    try {
+      const response = await fetch('/api/auth/verify-login-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code: verificationCode }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message);
+      } else {
+        // Get the stored password from the server
+        const passwordResponse = await fetch('/api/auth/get-stored-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, code: verificationCode }),
         });
-        
-        const data = await response.json();
-        
-        if (!response.ok) {
-          setError(data.message);
-          // message.error(data.message);
-        } else {
-          // If code is verified, proceed with login
-          try {
-            // Get the stored password from the server
-            const passwordResponse = await fetch('/api/auth/get-stored-password', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ email, code: verificationCode }),
-            });
-            
-            const passwordData = await passwordResponse.json();
-            
-            if (!passwordResponse.ok) {
-              throw new Error(passwordData.message || 'Failed to retrieve login information');
-            }
-            
-            // Use the stored password for login
-            const result = await signIn('credentials', {
-              redirect: false,
-              email,
-              password: passwordData.password,
-            });
 
-            if (result.error) {
-              setError(result.error);
-              // message.error(result.error);
-            } else {
-              // message.success('Login successful!');
-              router.push('/');
-              router.refresh();
-            }
-          } catch (error) {
-            setError(error.message || 'Authentication failed');
-            // message.error(error.message || 'Authentication failed');
-          }
+        const passwordData = await passwordResponse.json();
+
+        if (!passwordResponse.ok) {
+          throw new Error(passwordData.message || 'Failed to retrieve login information');
         }
-      } catch (error) {
-        setError('An error occurred. Please try again.');
-        // message.error('An error occurred. Please try again.');
-      } finally {
-        setLoading(false);
+
+        // Login with credentials
+        const result = await signIn('credentials', {
+          redirect: false,
+          email,
+          password: passwordData.password,
+        });
+
+        if (result.error) {
+          setError(result.error);
+        } else {
+          // Get the session to check role
+          const sessionRes = await fetch('/api/auth/session');
+          const sessionData = await sessionRes.json();
+          const role = sessionData?.user?.role;
+
+          if (role === 'admin') {
+            router.push('/admin'); // redirect admin
+          } else {
+            router.push('/'); // redirect normal user
+          }
+
+          router.refresh();
+        }
       }
+    } catch (error) {
+      setError(error.message || 'Authentication failed');
+    } finally {
+      setLoading(false);
     }
-  };
+  }
+};
+
 
   const handleGoogleSignIn = () => {
     signIn('google', { callbackUrl: '/' });

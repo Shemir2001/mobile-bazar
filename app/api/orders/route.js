@@ -238,7 +238,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import dbConnect from '@/lib/db';
 import Order from '@/models/Order';
-
+import nodemailer from 'nodemailer';
 // GET - Fetch user orders
 export async function GET() {
   try {
@@ -279,8 +279,6 @@ export async function POST(req) {
     const session = await getServerSession(authOptions);
     const body = await req.json();
 
-    console.log('=== ORDER CREATION START ===');
-
     const {
       items,
       email,
@@ -294,23 +292,19 @@ export async function POST(req) {
     } = body;
 
     // Validation
-    if (!items || items.length === 0) {
+    if (!items || items.length === 0)
       return NextResponse.json({ error: 'No items in order' }, { status: 400 });
-    }
 
-    if (!email || !shippingAddress) {
+    if (!email || !shippingAddress)
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
 
-    if (!paymentMethod || !['card', 'cod'].includes(paymentMethod)) {
+    if (!paymentMethod || !['card', 'cod'].includes(paymentMethod))
       return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
-    }
 
     // Create order data
     const orderData = {
       user: session?.user?.id || session?.user?._id || null,
       email: email.toLowerCase(),
-      
       items: items.map(item => ({
         product: item.id || null,
         name: item.name,
@@ -318,7 +312,6 @@ export async function POST(req) {
         price: item.price,
         image: item.image || item.images?.[0],
       })),
-
       shippingAddress: {
         name: shippingAddress.name,
         address: shippingAddress.address,
@@ -327,12 +320,11 @@ export async function POST(req) {
         postalCode: shippingAddress.postalCode,
         country: shippingAddress.country || 'United States',
       },
-
-      paymentMethod: paymentMethod,
+      paymentMethod,
       itemsPrice: itemsPrice || totalPrice,
       taxPrice: taxPrice || 0,
       shippingPrice: shippingPrice || 0,
-      totalPrice: totalPrice,
+      totalPrice,
     };
 
     // Handle COD vs Card payments
@@ -341,40 +333,66 @@ export async function POST(req) {
       orderData.isPaid = false;
       orderData.paymentIntentId = `COD-${Date.now()}`;
     } else if (paymentMethod === 'card') {
-      if (!paymentIntentId) {
+      if (!paymentIntentId)
         return NextResponse.json(
           { error: 'Payment intent ID required for card payments' },
           { status: 400 }
         );
-      }
       orderData.paymentIntentId = paymentIntentId;
       orderData.status = 'paid';
       orderData.isPaid = true;
       orderData.paidAt = new Date();
     }
 
-    console.log('Creating order...');
-
     // Create the order
     const order = await Order.create(orderData);
 
-    console.log('✅ Order created successfully!');
-    console.log('MongoDB _id:', order._id);
-    console.log('_id type:', typeof order._id);
+    // ----------- Send email to customer -----------
+    try {
+      const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: Number(process.env.SMTP_PORT) || 587,
+        secure: false,
+        auth: { user: process.env.Email_User, pass: process.env.Email_Password },
+      });
 
-    // FIXED: Ensure proper ID conversion
+      const emailContent = `
+        Hello ${shippingAddress.name || 'Customer'},
+
+        Thank you for your order (${order.orderNumber})!
+        Total Amount: $${order.totalPrice.toFixed(2)}
+        Payment Method: ${order.paymentMethod}
+        Status: ${order.status}
+
+        Shipping Address:
+        ${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.postalCode}
+        ${shippingAddress.country || 'United States'}
+
+        Items:
+        ${items.map(i => `- ${i.name} x${i.quantity} - $${i.price}`).join('\n')}
+
+        Regards,
+        Your Shop Team
+      `;
+
+      await transporter.sendMail({
+        from: `"Your Shop" <${process.env.Email_User}>`,
+        to: order.email,
+        subject: `Order Confirmation - ${order.orderNumber}`,
+        text: emailContent,
+      });
+    } catch (emailErr) {
+      console.error('Failed to send email to customer:', emailErr);
+    }
+
+    // Prepare response
     const orderIdString = order._id.toString();
-    
-    console.log('Converted ID:', orderIdString);
-    console.log('Order Number:', order.orderNumber);
-
-    // FIXED: Create a clean response object
     const responseData = {
       success: true,
       message: 'Order created successfully',
       order: {
         _id: orderIdString,
-        id: orderIdString, // Also include as 'id' for compatibility
+        id: orderIdString,
         orderNumber: order.orderNumber,
         totalPrice: order.totalPrice,
         status: order.status,
@@ -383,19 +401,12 @@ export async function POST(req) {
         createdAt: order.createdAt,
         email: order.email,
         shippingAddress: order.shippingAddress,
-      }
+      },
     };
 
-    console.log('=== RESPONSE BEING SENT ===');
-    console.log(JSON.stringify(responseData, null, 2));
-    console.log('=== ORDER CREATION END ===');
-
     return NextResponse.json(responseData, { status: 201 });
-
   } catch (err) {
-    console.error('=== ORDER CREATION ERROR ===');
-    console.error('Error:', err);
-    console.error('Error message:', err.message);
+    console.error('ORDER CREATION ERROR:', err);
     return NextResponse.json(
       { error: 'Failed to create order', details: err.message },
       { status: 500 }
